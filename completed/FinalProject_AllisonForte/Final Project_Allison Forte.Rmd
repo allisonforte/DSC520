@@ -1,0 +1,489 @@
+---
+title: "DSC 520 Final Paper"
+author: "Allison Forte"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+## Does meat consumptions around the world correlate with life expectancy at birth, happiness, or other health statistics?
+
+Research has shown that the high consumption of meat throughout the world is unsustainable for our planet's future. While we know that meat consumption is not a sustainable dietary choice, what else does it influence? Overall, are countries that consume less meat happier? Healthier? Do citizens of countries that eat less meat live longer? 
+
+Perhaps this information can help sway the general public and strengthen the argument that consuming less meat is the way of the future. We are already seeing more meat alternatives in grocery stores and a trend toward meatless Mondays and other dietary shifts. Perhaps additional reasons for consuming less meat will help those who are still sticking to a heavily meat diet reconsider. 
+
+By analyzing several data sets that provide information about meat consumption by country and happiness, life expectancy, and other health indicators, we will be able to narrow in on a conclusion about meat consumption and how it relates to happiness and overall health using data that can be verified. We could use this analysis to predict how countries' happiness and health might change if their meat consumption did as well. 
+
+# Research questions to address
+
+1. Is there a correlation between meat consumption and happiness by country?
+2. Is the difference in life expectancy in countries with lower meat consumption compared to those with higher meat consumption statistically significant?
+3. Does the type of meat influence these relationships?
+4. What additional health indicators correlate with meat consumption?
+5. Which countries are tending down overall in meat consumption per year? Are these countries trending up in happiness and life expectancy?
+6. Across the world is the consumption of certain types of meat on the rise or decline?
+
+By looking closely at the listed questions, the relationship between meat consumption and other variables will be quantified and determined to be statistically significant or not. While performing this analysis, we must be aware of confounding variables that are hiding the true source of the correlation. We will be able to draw initial conclusions from this analysis but additional verification will be required to explore and validate the relationships further. 
+
+In order to address these questions, we will combine data from all the data sets and filter out data for countries that do not have information on all variables. We will need to ensure that each data set includes country name or code and use one of those to join the data sets ensuring that they are formatted properly so we can see the meat consumption and other variables for the same year together. Formatting the data properly will ensure our final results are as meaningful as possible. 
+
+# Datasets that will be used
+
+1. Worldwide Meat Consumption
+    + Source: [Kaggle.com](https://www.kaggle.com/datasets/vagifa/meatconsumption?resource=download)
+    + Description: This data set is a CVS file with 5 columns: location, subject (type of meat), time, measure, and value. This data includes statistics from 1990 through 2026 as it was refreshed in 2018 to include projections. It includes 28 members of the EU along with other countries.
+2. World Health Statistics 2020|Complete|Geo-Analysis
+    + Source: [Kaggle.com](https://www.kaggle.com/datasets/utkarshxy/who-worldhealth-statistics-2020-complete)
+    + Description: This data set has 39 different files and includes 186 columns detailing health statistics throughout the world. Statistics are available since 2000 for 184 coountries. 
+3. World Happiness Report up to 2022
+    + Source: [Kaggle.com](https://www.kaggle.com/datasets/mathurinache/world-happiness-report)
+    + Description: This data set includes happiness scores from 2015 to 2022 for 158 countries. There are 12 columns in the data set including the country, region, happiness score and rank, life expectancy, and GDP per capita. This data was collected from the Gallup World Survey.
+4. ISO Country Codes - Global
+    + Source: [Kaggle.com](https://www.kaggle.com/datasets/andradaolteanu/iso-country-codes-global)
+    + Description: This data set contains country codes for 246 countries. This data can be used to ensure all used data sets can be linked as some sort by country coode and others sort by country name. This data set has 5 columns. 
+
+# Packages that will be used
+
++ jsonlite: to generate and parse json data
++ ggplot2: for data visualization
++ dplyr: for working with data frames
++ pastecs: for data analysis
++ pander:
++ knitr: for report generation
++ xlsx: for reading data
++ plyr: for splitting and combining data
++ ppcor: for calculating correlations
++ tidyverse: contains several other packages including ggplot2 and dplyr which are already listed
+
+Other packages I do not expect to need: DBI and RSQLite: I will not need to connect to a database management system.
+
+More necessary packages may become apparent as the analysis is performed. 
+
+# Visuals (plots and tables) that will illustrate the results of the research questions
+
++ Several scatter plots will illustrate relationships between variables in my data sets
++ Tables can be used to neatly summarize the key statistics and findings from the research
+
+# Additional information that will be required
+
++ To complete this project, I first must be able to extract the correct data from the data sets. With the knowledge from the course this should be possible.
++ To compare the variables in question I will be able to create scatter plots and run correlation tests. This should be possible with the information from this course.
++ Determining which variables are confounding the main variables in question will still be a challenge. 
++ Understanding how valid the findings are based on how many years of data I can use would be helpful for speaking to the validity of the results. 
+
+## Milestone 2
+
+# Data preparation and cleansing
+# Final data set
+
++ To prepare the data for analysis it will be combined into one data set. The data will be loaded in to multiple data frames and then specific columns from each data frame will be pulled into one main data frame. The country_codes_df will serve as the base data frame.
+
++ Data will be aligned based on country name or country code. The need to have both country code and country name to match by was the reason country_codes_df was chosen as the base data frame. 
+
+```{r, include = FALSE}
+library(readr)
+#set working dictionary
+setwd('/Users/allison.forte/Documents/520 assignments')
+
+# load data
+meat_consumption_df <- read.csv('Final Project/meat_consumption_worldwide.csv')
+
+country_codes_df <- read.csv('Final Project/wikipedia-iso-country-codes.csv')
+
+happiness2015_df <- read.csv('Final Project/happiness_2015.csv')
+
+happiness2016_df <- read.csv('Final Project/happiness_2016.csv')
+
+happiness2017_df <- read.csv('Final Project/happiness_2017.csv')
+
+happiness2018_df <- read.csv('Final Project/happiness_2018.csv')
+
+happiness2019_df <- read.csv('Final Project/happiness_2019.csv')
+
+happiness2020_df <- read.csv('Final Project/happiness_2020.csv')
+
+happiness2021_df <- read.csv('Final Project/happiness_2021.csv')
+
+happiness2022_df <- read.csv('Final Project/happiness_2022.csv')
+
+life_expectancy_birth_df <- read.csv('Final Project/archive (3)/lifeExpectancyAtBirth.csv')
+
+cancer_df <- read.csv('Final Project/archive (3)/30-70cancerChdEtc.csv')
+```
+
+```{r, include = FALSE}
+# add happiness score for each country for each year 2015-2022
+#2015
+country_codes_df$happiness_2015 <- happiness2015_df$Happiness.Score[match(country_codes_df$English.short.name.lower.case, happiness2015_df$Country)]
+
+country_codes_df$happiness_2015 <- happiness2015_df$Happiness.Score[match(country_codes_df$English.short.name.lower.case, happiness2015_df$Country)]
+
+#2016
+country_codes_df$happiness_2016 <- happiness2016_df$Happiness.Score[match(country_codes_df$English.short.name.lower.case, happiness2016_df$Country)]
+
+#2017
+country_codes_df$happiness_2017 <- happiness2017_df$Happiness.Score[match(country_codes_df$English.short.name.lower.case, happiness2017_df$Country)]
+
+#2018
+country_codes_df$happiness_2018 <- happiness2018_df$Score[match(country_codes_df$English.short.name.lower.case, happiness2018_df$Country.or.region)]
+
+#2019
+country_codes_df$happiness_2019 <- happiness2019_df$Score[match(country_codes_df$English.short.name.lower.case, happiness2019_df$Country.or.region)]
+
+#2020
+country_codes_df$happiness_2020 <- happiness2020_df$Ladder.score[match(country_codes_df$English.short.name.lower.case, happiness2020_df$Country.name)]
+
+#2021
+country_codes_df$happiness_2021 <- happiness2021_df$Ladder.score[match(country_codes_df$English.short.name.lower.case, happiness2021_df$Country.name)]
+
+#2022
+country_codes_df$happiness_2022 <- happiness2022_df$Happiness.score[match(country_codes_df$English.short.name.lower.case, happiness2022_df$Country)]
+```
+
+```{r, include = FALSE}
+# add life expectancy at birth for both sexes for each country for each year 2015 and 2019
+library(dplyr)
+
+life_expectancy_birth_mod <- life_expectancy_birth_df[life_expectancy_birth_df$'Dim1'=='Both sexes',]
+
+life_expectancy_birth_mod_2015 <- life_expectancy_birth_mod[life_expectancy_birth_mod$'Period' == 2015,]
+
+life_expectancy_birth_mod_2019 <- life_expectancy_birth_mod[life_expectancy_birth_mod$'Period' == 2019,]
+
+country_codes_df$life_expectancy_birth_2015 <- life_expectancy_birth_mod_2015$First.Tooltip[match(country_codes_df$English.short.name.lower.case, life_expectancy_birth_mod_2015$Location)]
+
+country_codes_df$life_expectancy_birth_2019 <- life_expectancy_birth_mod_2019$First.Tooltip[match(country_codes_df$English.short.name.lower.case, life_expectancy_birth_mod_2019$Location)]
+```
+
+```{r, include = FALSE}
+# add chance of dying from cancer between 30 and 70 for both sexes for each country for each year 2015-2022
+cancer_mod <- cancer_df[cancer_df$'Dim1'=='Both sexes',]
+
+cancer_mod_2015 <- cancer_mod[cancer_mod$'Period' == 2015,]
+
+cancer_mod_2016 <- cancer_mod[cancer_mod$'Period' == 2016,]
+
+country_codes_df$cancer_30_70_probability_2015 <- cancer_mod_2015$First.Tooltip[match(country_codes_df$English.short.name.lower.case, cancer_mod_2015$Location)]
+
+country_codes_df$cancer_30_70_probability_2016 <- cancer_mod_2016$First.Tooltip[match(country_codes_df$English.short.name.lower.case, cancer_mod_2016$Location)]
+```
+
+```{r, include = FALSE}
+# add beef consumption for years 2015-2022 for each country by type
+beef_consumption_mod <- meat_consumption_df[meat_consumption_df$'SUBJECT'=='BEEF',]
+
+beef_consumption_mod_2015 <- beef_consumption_mod[beef_consumption_mod$'TIME' == 2015,]
+
+beef_consumption_mod_2016 <- beef_consumption_mod[beef_consumption_mod$'TIME' == 2016,]
+
+beef_consumption_mod_2017 <- beef_consumption_mod[beef_consumption_mod$'TIME' == 2017,]
+
+beef_consumption_mod_2018 <- beef_consumption_mod[beef_consumption_mod$'TIME' == 2018,]
+
+beef_consumption_mod_2019 <- beef_consumption_mod[beef_consumption_mod$'TIME' == 2019,]
+
+beef_consumption_mod_2020 <- beef_consumption_mod[beef_consumption_mod$'TIME' == 2020,]
+
+beef_consumption_mod_2021 <- beef_consumption_mod[beef_consumption_mod$'TIME' == 2021,]
+
+beef_consumption_mod_2022 <- beef_consumption_mod[beef_consumption_mod$'TIME' == 2022,]
+
+country_codes_df$beef_consumption_2015 <- beef_consumption_mod_2015$Value[match(country_codes_df$Alpha.3.code, beef_consumption_mod_2015$LOCATION)]
+
+country_codes_df$beef_consumption_2016 <- beef_consumption_mod_2016$Value[match(country_codes_df$Alpha.3.code, beef_consumption_mod_2016$LOCATION)]
+
+country_codes_df$beef_consumption_2017 <- beef_consumption_mod_2017$Value[match(country_codes_df$Alpha.3.code, beef_consumption_mod_2017$LOCATION)]
+
+country_codes_df$beef_consumption_2018<- beef_consumption_mod_2018$Value[match(country_codes_df$Alpha.3.code, beef_consumption_mod_2018$LOCATION)]
+
+country_codes_df$beef_consumption_2019<- beef_consumption_mod_2019$Value[match(country_codes_df$Alpha.3.code, beef_consumption_mod_2019$LOCATION)]
+
+country_codes_df$beef_consumption_2020 <- beef_consumption_mod_2020$Value[match(country_codes_df$Alpha.3.code, beef_consumption_mod_2020$LOCATION)]
+
+country_codes_df$beef_consumption_2021 <- beef_consumption_mod_2021$Value[match(country_codes_df$Alpha.3.code, beef_consumption_mod_2021$LOCATION)]
+
+country_codes_df$beef_consumption_2022 <- beef_consumption_mod_2022$Value[match(country_codes_df$Alpha.3.code, beef_consumption_mod_2022$LOCATION)]
+```
+
+```{r, include = FALSE}
+# add pig consumption for years 2015-2022 for each country by type
+pig_consumption_mod <- meat_consumption_df[meat_consumption_df$'SUBJECT'=='PIG',]
+
+pig_consumption_mod_2015 <- pig_consumption_mod[pig_consumption_mod$'TIME' == 2015,]
+
+pig_consumption_mod_2016 <- pig_consumption_mod[pig_consumption_mod$'TIME' == 2016,]
+
+pig_consumption_mod_2017 <- pig_consumption_mod[pig_consumption_mod$'TIME' == 2017,]
+
+pig_consumption_mod_2018 <- pig_consumption_mod[pig_consumption_mod$'TIME' == 2018,]
+
+pig_consumption_mod_2019 <- pig_consumption_mod[pig_consumption_mod$'TIME' == 2019,]
+
+pig_consumption_mod_2020 <- pig_consumption_mod[pig_consumption_mod$'TIME' == 2020,]
+
+pig_consumption_mod_2021 <- pig_consumption_mod[pig_consumption_mod$'TIME' == 2021,]
+
+pig_consumption_mod_2022 <- pig_consumption_mod[pig_consumption_mod$'TIME' == 2022,]
+
+country_codes_df$pig_consumption_2015 <- pig_consumption_mod_2015$Value[match(country_codes_df$Alpha.3.code, pig_consumption_mod_2015$LOCATION)]
+
+country_codes_df$pig_consumption_2016 <- pig_consumption_mod_2016$Value[match(country_codes_df$Alpha.3.code, pig_consumption_mod_2016$LOCATION)]
+
+country_codes_df$pig_consumption_2017 <- pig_consumption_mod_2017$Value[match(country_codes_df$Alpha.3.code, pig_consumption_mod_2017$LOCATION)]
+
+country_codes_df$pig_consumption_2018 <- pig_consumption_mod_2018$Value[match(country_codes_df$Alpha.3.code, pig_consumption_mod_2018$LOCATION)]
+
+country_codes_df$pig_consumption_2019 <- pig_consumption_mod_2019$Value[match(country_codes_df$Alpha.3.code, pig_consumption_mod_2019$LOCATION)]
+
+country_codes_df$pig_consumption_2020 <- pig_consumption_mod_2020$Value[match(country_codes_df$Alpha.3.code, pig_consumption_mod_2020$LOCATION)]
+
+country_codes_df$pig_consumption_2021 <- pig_consumption_mod_2021$Value[match(country_codes_df$Alpha.3.code, pig_consumption_mod_2021$LOCATION)]
+
+country_codes_df$pig_consumption_2022 <- pig_consumption_mod_2022$Value[match(country_codes_df$Alpha.3.code, pig_consumption_mod_2022$LOCATION)]
+```
+
+```{r, include = FALSE}
+# add poultry consumption for years 2015-2022 for each country by type
+poultry_consumption_mod <- meat_consumption_df[meat_consumption_df$'SUBJECT'=='POULTRY',]
+
+poultry_consumption_mod_2015 <- poultry_consumption_mod[poultry_consumption_mod$'TIME' == 2015,]
+
+poultry_consumption_mod_2016 <- poultry_consumption_mod[poultry_consumption_mod$'TIME' == 2016,]
+
+poultry_consumption_mod_2017 <- poultry_consumption_mod[poultry_consumption_mod$'TIME' == 2017,]
+
+poultry_consumption_mod_2018 <- poultry_consumption_mod[poultry_consumption_mod$'TIME' == 2018,]
+
+poultry_consumption_mod_2019 <- poultry_consumption_mod[poultry_consumption_mod$'TIME' == 2019,]
+
+poultry_consumption_mod_2020 <- poultry_consumption_mod[poultry_consumption_mod$'TIME' == 2020,]
+
+poultry_consumption_mod_2021 <- poultry_consumption_mod[poultry_consumption_mod$'TIME' == 2021,]
+
+poultry_consumption_mod_2022 <- poultry_consumption_mod[poultry_consumption_mod$'TIME' == 2022,]
+
+country_codes_df$poultry_consumption_2015 <- poultry_consumption_mod_2015$Value[match(country_codes_df$Alpha.3.code, poultry_consumption_mod_2015$LOCATION)]
+
+country_codes_df$poultry_consumption_2016 <- poultry_consumption_mod_2016$Value[match(country_codes_df$Alpha.3.code, poultry_consumption_mod_2016$LOCATION)]
+
+country_codes_df$poultry_consumption_2017 <- poultry_consumption_mod_2017$Value[match(country_codes_df$Alpha.3.code, poultry_consumption_mod_2017$LOCATION)]
+
+country_codes_df$poultry_consumption_2018 <- poultry_consumption_mod_2018$Value[match(country_codes_df$Alpha.3.code, poultry_consumption_mod_2018$LOCATION)]
+
+country_codes_df$poultry_consumption_2019 <- poultry_consumption_mod_2019$Value[match(country_codes_df$Alpha.3.code, poultry_consumption_mod_2019$LOCATION)]
+
+country_codes_df$poultry_consumption_2020 <- poultry_consumption_mod_2020$Value[match(country_codes_df$Alpha.3.code, poultry_consumption_mod_2020$LOCATION)]
+
+country_codes_df$poultry_consumption_2021 <- poultry_consumption_mod_2021$Value[match(country_codes_df$Alpha.3.code, poultry_consumption_mod_2021$LOCATION)]
+
+country_codes_df$poultry_consumption_2022 <- poultry_consumption_mod_2022$Value[match(country_codes_df$Alpha.3.code, poultry_consumption_mod_2022$LOCATION)]
+```
+
+```{r, include = FALSE}
+# add sheep consumption for years 2015-2022 for each country by type
+sheep_consumption_mod <- meat_consumption_df[meat_consumption_df$'SUBJECT'=='SHEEP',]
+
+sheep_consumption_mod_2015 <- sheep_consumption_mod[sheep_consumption_mod$'TIME' == 2015,]
+
+sheep_consumption_mod_2016 <- sheep_consumption_mod[sheep_consumption_mod$'TIME' == 2016,]
+
+sheep_consumption_mod_2017 <- sheep_consumption_mod[sheep_consumption_mod$'TIME' == 2017,]
+
+sheep_consumption_mod_2018 <- sheep_consumption_mod[sheep_consumption_mod$'TIME' == 2018,]
+
+sheep_consumption_mod_2019 <- sheep_consumption_mod[sheep_consumption_mod$'TIME' == 2019,]
+
+sheep_consumption_mod_2020 <- sheep_consumption_mod[sheep_consumption_mod$'TIME' == 2020,]
+
+sheep_consumption_mod_2021 <- sheep_consumption_mod[sheep_consumption_mod$'TIME' == 2021,]
+
+sheep_consumption_mod_2022 <- sheep_consumption_mod[sheep_consumption_mod$'TIME' == 2022,]
+
+country_codes_df$sheep_consumption_2015 <- sheep_consumption_mod_2015$Value[match(country_codes_df$Alpha.3.code, sheep_consumption_mod_2015$LOCATION)]
+
+country_codes_df$sheep_consumption_2016 <- sheep_consumption_mod_2016$Value[match(country_codes_df$Alpha.3.code, sheep_consumption_mod_2016$LOCATION)]
+
+country_codes_df$sheep_consumption_2017 <- sheep_consumption_mod_2017$Value[match(country_codes_df$Alpha.3.code, sheep_consumption_mod_2017$LOCATION)]
+
+country_codes_df$sheep_consumption_2018 <- sheep_consumption_mod_2018$Value[match(country_codes_df$Alpha.3.code, sheep_consumption_mod_2018$LOCATION)]
+
+country_codes_df$sheep_consumption_2019 <- sheep_consumption_mod_2019$Value[match(country_codes_df$Alpha.3.code, sheep_consumption_mod_2019$LOCATION)]
+
+country_codes_df$sheep_consumption_2020 <- sheep_consumption_mod_2020$Value[match(country_codes_df$Alpha.3.code, sheep_consumption_mod_2020$LOCATION)]
+
+country_codes_df$sheep_consumption_2021 <- sheep_consumption_mod_2021$Value[match(country_codes_df$Alpha.3.code, sheep_consumption_mod_2021$LOCATION)]
+
+country_codes_df$sheep_consumption_2022 <- sheep_consumption_mod_2022$Value[match(country_codes_df$Alpha.3.code, sheep_consumption_mod_2022$LOCATION)]
+```
+
++ The final data frame has 49 columns but still has rows that have NA values in some columns 
+```{r, include = TRUE}
+summary(country_codes_df)
+head(country_codes_df)
+```
+# What do you not know how to do right now that you need to learn to import and cleanup your dataset?
+
++ I need to understand how to transform the happiness_2022 column as it is a character instead of an integer. The data transformations I tried have not worked and resulted in every value becoming NA.
+
++ I need to be more confident with how to clear lines of data that have NA values in key places so they do not interfere with the results. 
+
++ While I was able to extract the data I needed form the data frames I suspect there is a cleaner method I could have used that would not require as many intermediary steps.
+
+# Discuss how you plan to uncover new information in the data that is not self-evident.
+
++ In order to uncover new information, I will analyze the relationship between different variables. Creating plots and then linear regression models will help to quantify the strength of any relationships that exist. 
+
++ Combining multiple data sets will allow relationships to be explored that have not been looked at in past studies. 
+
+What are different ways you could look at this data to answer the questions you want to answer?
+
++ Looking at changes in variables over time and seeing the trend will allow us to see if the trends correlate with other trends. It would be interesting to quantify the delta between various time frames and see if change is speeding up or slowing down. In particular, the change in happiness year-over-year can be compared to the change in meat consumption year-over-year and then it can also be compared over a 5 year span. 
+
+Do you plan to slice and dice the data in different ways, create new variables, or join separate data frames to create new summary information? Explain.
+
++ Multiple data frames have been combined for this analysis. Because we are looking to compare happiness and meat consumption we combined the 2 data frames to make analysis easier. An alternative method would have been to leave the data in their own data frames and compare frame to frame. For the purpose of creating regression models and plots, having the data in one data frame will make this analysis simpler. 
+
++ If needed, new variables can be created to show the change over time (example: change in happiness from 2015-2020 and change in meat consumption from 2015-2020) to allow for simple comparison. 
+
++ When building regression models I may divide the data into 2 sets so one can be used for training and one for testing. 
+
++ A variable for total_meat_consumption per year may need to be created by totaling each type of meat. 
+
+# How could you summarize your data to answer key questions?
+
++ I will be able to summarize by data by looking at the overall average in meat consumption for each type and the overall average for happiness. By looking at the summary statistics for each year we can see if there are overall trends. Then looking at the same relationship on a country level we can see if the relationship can be verified. 
+
+# What types of plots and tables will help you to illustrate the findings to your questions? Ensure that all graph plots have axis titles, legend if necessary, scales are appropriate, appropriate geoms used, etc.).
+
++ Scatter plots comparing different variables will be most beneficial to start. Using years across the bottom and creating several plots showing  happiness over time and meat consumption over time will help. Over laying these graphs will allow us to compare the changes over time. 
+
+```{r, include = TRUE}
+library(ggplot2)
+ggplot(country_codes_df, aes(x=happiness_2015, y=beef_consumption_2015)) + geom_point() + geom_smooth(method=lm)
+```
+
+```{r, include = TRUE}
+library(ggplot2)
+ggplot(country_codes_df, aes(x=happiness_2015, y=pig_consumption_2015)) + geom_point()+ geom_smooth(method=lm)
+```
+
+```{r, include = TRUE}
+library(ggplot2)
+ggplot(country_codes_df, aes(x=happiness_2015, y=poultry_consumption_2015)) + geom_point() + geom_smooth(method=lm)
+```
+
+```{r, include = TRUE}
+library(ggplot2)
+ggplot(country_codes_df, aes(x=happiness_2015, y=sheep_consumption_2015)) + geom_point() + geom_smooth(method=lm)
+```
+
++ A scatter plot plotting meat consumption by type to happiness could be interesting but looking at total meat consumption compared to happiness would likely be more telling. 
+
+```{r, include = TRUE}
+country_codes_df$total_meat_2015 <-country_codes_df$beef_consumption_2015 + country_codes_df$pig_consumption_2015 + country_codes_df$poultry_consumption_2015  
+
+ggplot(country_codes_df, aes(x=happiness_2015, y=total_meat_2015)) + geom_point() + geom_smooth(method=lm)
+```
+
+```{r, include = TRUE}
+country_codes_df$total_meat_2020 <-country_codes_df$beef_consumption_2020 + country_codes_df$pig_consumption_2020 + country_codes_df$poultry_consumption_2020  
+
+ggplot(country_codes_df, aes(x=happiness_2020, y=total_meat_2020)) + geom_point() + geom_smooth(method=lm)
+```
+
+```{r, include = TRUE}
+country_codes_df$total_meat_change <-country_codes_df$total_meat_2020 - country_codes_df$total_meat_2015  
+
+country_codes_df$total_happiness_change <-country_codes_df$happiness_2020 - country_codes_df$happiness_2015 
+
+ggplot(country_codes_df, aes(x=total_happiness_change, y=total_meat_change)) + geom_point() + geom_smooth(method=lm)
+```
+
+```{r, include = TRUE}
+ggplot(country_codes_df, aes(x=happiness_2015, y=cancer_30_70_probability_2015)) + geom_point() + geom_smooth(method=lm)
+```
+
+```{r, include = TRUE}
+ggplot(country_codes_df, aes(x=total_meat_2015, y=cancer_30_70_probability_2015)) + geom_point() + geom_smooth(method=lm)
+```
+
+```{r, include = TRUE}
+ggplot(country_codes_df, aes(x=happiness_2015, y=life_expectancy_birth_2015)) + geom_point() + geom_smooth(method=lm)
+```
+
+```{r, include = TRUE}
+ggplot(country_codes_df, aes(x=total_meat_2015, y=life_expectancy_birth_2015)) + geom_point() + geom_smooth(method=lm)
+```
+
+What do you not know how to do right now that you need to learn to answer your questions?
+
++ At this time I think I will be able to complete the planned analysis based on knowledge we have acquired throughout this course. 
+
+# Do you plan on incorporating any machine learning techniques to answer your research questions? Explain.
+
++ At this point I think it could be interesting to use machine learning to be able to predict the happiness score for theoretical changes in meat consumption. If a model can be created, the original data frame for meat consumption could be used for predicting future happiness levels as it contains forecasted meat consumption for the same countries. 
+
+# Some additional questions you may want to consider asking yourself as you work through this section of the project:
+
++ What features could you ﬁlter on?
+    
+    + Filtering on region might be an interesting view that could highlight differences by continent or region in addition to any other relationships uncovered. 
+        
++ How could arranging your data in different ways help?
+    
+    + Having the data primarily arranged by country allows us to see all the variables for each country together but sorting the data by year instead of country could highlight some other relationnships. 
+
++ Can you reduce your data by selecting only certain variables?
+        
+    + Pulling in only the most important variables from the initial data sets has kept the final data frame relatively simple. Filtering out the NA values will simplify the data further. 
+
++ Could creating new variables add new insights?
+        
+    + Total meat consumption (the sum of the different meat types) could be helpful.
+
++ Could summary statistics at different categorical levels tell you more?
+        
+    + Using summary statistics for decade level changes or regional averages could be an interesting view of the data. 
+    
++ How can you incorporate the pipe (%>%) operator to make your code more efﬁcient?
+        
+     + I could likely use the pipe operator when combining my data frames to simplify my code.
+    
+    
+## Milestone 3
+
+Make a recommendation for the approach you would take and what the remaining steps would be using the information you have learned in this course to take this project from simply being an analysis exercise to proposed implementation of a solution
+
+# Write a coherent narrative that tells a story with the data as you complete this section.
+
+We know that eating large amounts of meat is not sustainable for our planet but does eating meat make countries happier? Does eating meat correlate to better life expectancy or other health factors that we are unaware of? Does the type of meat we eat impact the answers to these questions? This analysis has attempted to begin answering some of these questions in the hope that this research, and future research on similar topics, may help sway people in the direction of more vegetable heavy diets. 
+
+Looking at global meat consumption and happiness scores since 2015 as well as data showing life expectancy at birth and cancer rates has allowed us to explore the relationships between these variables. The data available breaks meat consumption into type of meat consumed for easy analysis of impact of different types of meat across the world. 
+
+Below are 2 models that could be used with this data. We could use the first model if we knew a countries happiness, cancer probability and life expectancy to predict how much meat the country would consume. If we instead wanted to predict a countries happiness while knowing their meat consumption, chance of cancer, and life expectancy, we could use the second model. Both models are statistically valid. The summaries are shown below. 
+
+```{r, include = TRUE}
+model_1 <- lm(total_meat_2015 ~ happiness_2015 + cancer_30_70_probability_2015 + life_expectancy_birth_2015, data = country_codes_df)
+model_2 <- lm(happiness_2015 ~ total_meat_2015 + cancer_30_70_probability_2015 + life_expectancy_birth_2015, data = country_codes_df)
+summary(model_1)
+summary(model_2)
+```
+
+By analyzing the scatter plots of happiness compared to meat we see that in general, countries that eat more meat are happier. The relationship was strongest when looking at poultry consumption instead of beef, pig, or sheep consumption. This was contrary to what I expected due to vegetable-heavy diets generally being linked to better health which in turn, generally leads to happier people. 
+
+The relationships between life expectancy and chance of cancer with both happiness and meat consumption were interesting. As would be expected, happiness increased with a lower chance of cancer and with an increased life expectancy. Contrary to initial expectations, as meat consumption increased, chance of cancer decreased. Additionally, As meat consumption increased, life expectancy also increased. 
+
+The data used in this analysis offers initial information that can be followed up on. Unfortunately, there is a high likelihood that other variables, not captured in the data set are confounding these results. Often, countries with a higher GDP consume more meat and have better health care. It seems likely that results could be altered by compensating for differences in other variables not looked at in this analysis. 
+
+By working with this particular data set, we are able to see a strong relationship between our variables and we could reasonably expect to use one of the calculated models to find the information we are looking for, but we cannot conclude that there is any causal relationship without significant further analysis. 
+
+Looking more closely at the relationship specifically between poultry consumption and health and happiness could reveal some interesting findings as poultry consumption had the strongest effect on happiness in this data set. Again, we cannot speak causally about this relationship, but further analysis could reveal other variables affecting both that could be used to attempt to increase happiness in countries with low happiness scores. 
+
+This analysis was completed with readily available data that was collected for a variety of purposes. The data was not collected for the analysis performed here and does not represent the entire world. In order for these insights and implications to be truly useful and meaningful, more research will be needed.
+
+A survey meant to look at these connections would capture a more representative sample and could be done in a way that controls for other factors. For instance, multiple small surveys could be done within cities or countries so as to control for living conditions and economic development. Scores could then be compared at an individual level. Do individual households that have relatively similar living conditions but that consume different amounts of meat have different happiness scores? 
+
+The current analysis does not compensate for significant differences in lifestyle, income levels, and food access between different countries. A further study could look at consumed meat that was  purchased vs consumed meat that was raised by the consumer. This analysis might reveal trends that people are generally happier when they raise their own food or could show that people are generally happier when they do not work to raise food for their families.
+
+Overall, this analysis just touches the surface of what could be explored when thinking about meat consumption and happiness. We know that consuming too much meat has negative health effects but we do not have as much data on how it impacts our mentality. Knowing that more companies are pursuing the production of meat alternatives, this research could play a crucial role in marketing such products. Most people want to be happier. If groups (those seeking to make an impact on the environment and those seeking to profit from 'meat alternatives') can convince people to eat less meat in order to be happier, we may see a faster shift to new diet trends. 
